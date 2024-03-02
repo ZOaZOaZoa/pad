@@ -3,6 +3,8 @@ from lxml import etree
 import time
 import pickle
 import os
+from hit import Hit, hit_to_dict
+import pandas as pd
 
 def download_page(url):
     '''
@@ -76,18 +78,7 @@ def download_hits(query, packet_size, prompt=False):
     
     return hits
 
-class Hit:
-    def __init__(self, params_dict):
-        self.title = params_dict.get('title', None)
-        self.venue = params_dict.get('venue', None)
-        self.pages = params_dict.get('pages', None)
-        self.year = params_dict.get('year', None)
-        self.type = params_dict.get('type', None)
-        self.access = params_dict.get('access', None)
-        self.doi = params_dict.get('doi', None)
 
-    def __str__(self):
-        return f'{self.year} {self.title}'
 
 def get_hit_objects(query, prompt, file_folder='', redownload=False):
     '''
@@ -95,9 +86,7 @@ def get_hit_objects(query, prompt, file_folder='', redownload=False):
     '''
     file_name = f"{file_folder}/{query.replace('|', ' OR ')}.dat"
     if os.path.isfile(file_name) and not redownload:
-        with open(file_name, 'rb') as file:
-            hits = pickle.load(file)
-            return hits
+        Hit.get_from_file(file_name)
     
     hits_dicts = download_hits(query, 1000, prompt)
     print(f'Total hits: {len(hits_dicts)}')
@@ -161,3 +150,6 @@ if __name__ == '__main__':
     print(f'For the total query got {len(hits_total)} hits')
     with open('total.dat', 'wb') as file:
         pickle.dump(hits_total, file)
+
+    hits_pd = pd.DataFrame(map(hit_to_dict, hits_total))
+    hits_pd.to_csv('total.csv')
